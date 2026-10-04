@@ -1,251 +1,258 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Search, Mic, ArrowRight, History, ShoppingBag, Anchor, Waves, MapPin } from 'lucide-react';
-import BottomNav from '../components/BottomNav';
+import React, { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import {
+  ChevronLeft,
+  ShoppingBag,
+  Search,
+  X,
+  SlidersHorizontal,
+  Heart,
+  Plus,
+  AlertCircle,
+  Anchor,
+} from "lucide-react";
+import { useCart } from "../lib/cartContext";
+import { useApiClient, fetchProducts, ApiProduct, formatKz } from "../lib/api";
 
-export default function SearchExplore() {
-  const recentSearches = [
-    { title: 'Garoupa de Luanda', subtitle: 'Premium Wild Line-Caught', href: '/product' },
-    { title: 'Lagosta Viva', subtitle: 'Cabo Ledo Artisanal Trap', href: '#' },
-    { title: 'Polvo Fresco 1kg', subtitle: 'Tenderized Rock Reef Octopus', href: '#' },
-    { title: 'Bacalhau Seco', subtitle: 'Tradicional Salt Cure Curated', href: '#' },
-  ];
+const FALLBACK_IMAGES = [
+  "/imagem do projecto/Margin.png",
+  "/imagem do projecto/Margin(5).png",
+  "/imagem do projecto/Margin(10).png",
+  "/imagem do projecto/Margin(11).png",
+  "/imagem do projecto/Margin(12).png",
+  "/imagem do projecto/Margin(13).png",
+];
 
-  const trendingCatches = [
-    'Camarão Tigre •',
-    'Robalo Selvagem',
-    'Atum Rabilho',
-    'Lulas Frescas',
-    'Ostras da Baía',
-    'Filete de Pescada',
-    'Sardinha Fresca •',
-  ];
+function fallbackImage(id: number): string {
+  return FALLBACK_IMAGES[id % FALLBACK_IMAGES.length];
+}
 
-  const docks = [
-    {
-      title: 'Mabunda Central Pier',
-      description: 'Historic daily harbor landing. Handline garoupa, red snapper, and benthic...',
-      rating: '4.8',
-      reviews: '184',
-      badge: 'DIRECT WHARF',
-      time: 'Fleet Docked 5:15 AM',
-      image: '/imagem do projecto/Background(1).png',
-    },
-    {
-      title: 'Ilha Artisanal Beach',
-      description: 'Small-boat line-caught landing. Direct beach access, zero-bycatch policy...',
-      rating: '4.8',
-      reviews: '92',
-      badge: 'ECO-CERTIFIED',
-      time: 'Chilled at 0°C',
-      image: '/imagem do projecto/Background(2).png',
-    },
-  ];
+function SearchResultsInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTerm = searchParams.get("q") ?? "";
+  const [searchTerm, setSearchTerm] = useState(initialTerm);
+  const { addItem, count } = useCart();
+  const { apiFetch } = useApiClient();
+
+  const [products, setProducts] = useState<ApiProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchProducts(apiFetch)
+      .then(setProducts)
+      .catch(() => setError("Falha ao carregar resultados"))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const filtered = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return products;
+    return products.filter(
+      (p) =>
+        p.name?.toLowerCase().includes(term) ||
+        (p.description ?? "").toLowerCase().includes(term)
+    );
+  }, [products, searchTerm]);
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] pb-24 text-[#0A192F] flex justify-center">
-      <div className="w-full max-w-md bg-[#F8FAFC] min-h-screen relative shadow-2xl flex flex-col">
-        
-        {/* Top Header com Logotipo e Perfil exatos */}
-        <header className="px-4 pt-3 pb-3 flex items-center justify-between bg-white border-b border-slate-100">
-          <div className="flex items-center space-x-2.5">
-            <div className="relative w-12 h-9 flex items-center justify-center shrink-0">
-              <Image 
-                src="/imagem do projecto/LOGO.png" 
-                alt="Mabunda Logo" 
-                fill 
-                className="object-contain"
-                priority
-              />
-            </div>
-            <div>
-              <div className="flex items-center space-x-1.5">
-                <span className="font-bold text-base tracking-tight text-[#0A192F]">Mabunda</span>
-                <span className="bg-slate-100 text-[#0A192F] text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  LUANDA
-                </span>
-              </div>
-              <div className="flex items-center space-x-1 text-[10px] text-slate-500 font-medium mt-0.5">
-                <MapPin size={10} className="text-[#0A192F]" />
-                <span>Ilha de Luanda • Search</span>
-              </div>
-            </div>
-          </div>
+    <div className="max-w-md mx-auto bg-gray-50 min-h-screen text-gray-900 font-sans pb-10">
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+        <button
+          onClick={() => router.back()}
+          className="p-1 rounded-full hover:bg-gray-100 transition"
+        >
+          <ChevronLeft className="w-6 h-6 text-gray-800" />
+        </button>
 
-          <div className="flex items-center space-x-2.5">
-            <Link href="/cart" className="relative w-9 h-9 bg-slate-50 border border-slate-200/70 rounded-full flex items-center justify-center text-[#0A192F] hover:bg-slate-100 transition-colors">
-              <ShoppingBag size={16} />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#0A192F] text-white text-[9px] font-black rounded-full flex items-center justify-center shadow">
-                3
+        <div className="flex items-center gap-3">
+          <Link href="/cart" className="relative">
+            <span className="p-2 bg-gray-100 rounded-full inline-flex">
+              <ShoppingBag className="w-5 h-5 text-gray-800" />
+            </span>
+            {count > 0 && (
+              <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {count}
               </span>
-            </Link>
-
-            <Link href="/conta" className="w-9 h-9 rounded-full overflow-hidden border border-slate-200 relative shrink-0">
-              <Image 
-                src="/imagem do projecto/perfil.png" 
-                alt="Perfil de Cristiano" 
-                fill 
-                className="object-cover"
-              />
-            </Link>
-          </div>
-        </header>
-
-        {/* Location Sub-header */}
-        <div className="bg-white px-5 py-2.5 flex items-center justify-between border-b border-slate-100 text-xs">
-          <div className="flex items-center space-x-1.5 text-slate-600">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-slate-500">Ilha de Luanda</span>
-            <span className="font-semibold text-[#0A192F]">• Search Active</span>
-          </div>
-          <span className="text-[10px] text-slate-400">06:40 WAT</span>
-        </div>
-
-        {/* Search Bar & Fleet Notice */}
-        <div className="px-5 pt-4">
-          <div className="relative flex items-center mb-3">
-            <Search size={18} className="absolute left-3.5 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Search fish, prawns, artisanal vendors..." 
-              className="w-full bg-slate-100 text-xs text-[#0A192F] pl-10 pr-10 py-3 rounded-xl border border-transparent focus:border-slate-300 focus:bg-white outline-none transition-all"
+            )}
+          </Link>
+          <Link href="/conta" className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 relative">
+            <Image
+              src="/imagem do projecto/perfil.png"
+              alt="Perfil"
+              fill
+              className="object-cover"
             />
-            <Mic size={18} className="absolute right-3.5 text-slate-400 cursor-pointer hover:text-[#0A192F]" />
-          </div>
-
-          <div className="bg-slate-100 px-3 py-2 rounded-xl flex items-center space-x-2 text-[11px] text-slate-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0A192F]"></span>
-            <span className="truncate">Porto de Luanda: Morning fleet docked & verified</span>
-          </div>
+          </Link>
         </div>
+      </header>
 
-        {/* Recent Searches */}
-        <div className="px-5 pt-5">
-          <div className="flex justify-between items-center mb-2.5">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Recent Searches</span>
-            <span className="text-[11px] font-medium text-slate-400 cursor-pointer hover:underline">Clear All</span>
+      {/* Search Input */}
+      <div className="px-4 mt-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 flex items-center bg-gray-100 rounded-2xl px-3 py-2.5">
+            <Search className="w-5 h-5 text-gray-400 mr-2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-transparent w-full focus:outline-none text-sm text-gray-800 font-medium"
+              placeholder="Pesquisar peixe ou marisco..."
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm("")}>
+                <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
           </div>
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-100">
-            {recentSearches.map((item, index) => {
-              const content = (
-                <div className="px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer first:rounded-t-2xl last:rounded-b-2xl w-full">
-                  <div className="flex items-center space-x-3">
-                    <History size={16} className="text-slate-400" />
-                    <div>
-                      <h4 className="text-xs font-bold text-[#0A192F]">{item.title}</h4>
-                      <p className="text-[10px] text-slate-400">{item.subtitle}</p>
-                    </div>
-                  </div>
-                  <ArrowRight size={14} className="text-slate-300" />
-                </div>
-              );
-
-              return (
-                <div key={index}>
-                  {item.href ? (
-                    <Link href={item.href} className="block">
-                      {content}
-                    </Link>
-                  ) : (
-                    content
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <button className="p-2.5 bg-gray-100 rounded-2xl hover:bg-gray-200 transition">
+            <SlidersHorizontal className="w-5 h-5 text-gray-700" />
+          </button>
         </div>
-
-        {/* Trending Daily Catches */}
-        <div className="px-5 pt-5">
-          <div className="flex items-center space-x-1.5 mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Trending Daily Catches</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {trendingCatches.map((catchItem, index) => (
-              <span 
-                key={index} 
-                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3.5 py-1.5 rounded-full font-medium transition-colors cursor-pointer"
-              >
-                {catchItem}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Artisanal Cooperative Docks */}
-        <div className="px-5 pt-6">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-1.5">
-              <Anchor size={16} className="text-[#0A192F]" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Artisanal Cooperative Docks</h3>
-            </div>
-            <span className="text-[10px] text-slate-400 font-medium">Verified Source</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3.5">
-            {docks.map((dock, index) => (
-              <div key={index} className="bg-white rounded-2xl p-2.5 border border-slate-100 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="relative w-full h-28 rounded-xl overflow-hidden mb-2.5">
-                    <Image 
-                      src={dock.image} 
-                      alt={dock.title} 
-                      fill 
-                      className="object-cover"
-                    />
-                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-bold flex items-center space-x-1">
-                      <span>★ {dock.rating}</span>
-                      <span className="text-slate-300 font-normal">({dock.reviews})</span>
-                    </div>
-                    <span className="absolute bottom-2 left-2 bg-[#0A192F]/90 text-white text-[8px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                      {dock.badge}
-                    </span>
-                  </div>
-                  <h4 className="text-xs font-bold text-[#0A192F] mb-1">{dock.title}</h4>
-                  <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed mb-3">{dock.description}</p>
-                </div>
-                
-                <div className="flex items-center justify-between pt-1 border-t border-slate-50">
-                  <span className="text-[9px] text-emerald-600 font-semibold">{dock.time}</span>
-                  <div className="w-6 h-6 bg-slate-100 text-[#0A192F] rounded-full flex items-center justify-center hover:bg-[#0A192F] hover:text-white transition-colors">
-                    <ArrowRight size={12} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Browse by Water Depth */}
-        <div className="px-5 pt-6 pb-6">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">Browse by Water Depth</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-[#0A192F]">Deep Oceanic</span>
-                <Waves size={16} className="text-slate-400" />
-              </div>
-              <p className="text-[10px] text-slate-500 mb-3">Tuna, Swordfish, Grouper</p>
-              <span className="text-[10px] font-bold text-[#0A192F]">18 Available</span>
-            </div>
-
-            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-[#0A192F]">Coastal Reef</span>
-                <Waves size={16} className="text-slate-400" />
-              </div>
-              <p className="text-[10px] text-slate-500 mb-3">Prawns, Octopus, Crab</p>
-              <span className="text-[10px] font-bold text-[#0A192F]">24 Available</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation Bottom Bar */}
-        <BottomNav />
       </div>
-    </main>
+
+      {/* Result Count */}
+      <div className="px-4 mt-3 flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center gap-1 font-medium">
+          <span className="font-bold text-gray-900">{filtered.length} Resultados</span>
+          {searchTerm && (
+            <>
+              <span>-</span>
+              <span>&quot;{searchTerm}&quot;</span>
+            </>
+          )}
+        </div>
+        <div className="bg-gray-200/70 text-gray-700 px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1">
+          <span>⚙ Lota Luanda 05:00</span>
+        </div>
+      </div>
+
+      {/* Erro */}
+      {error && (
+        <div className="mx-4 mt-4 bg-red-50 border border-red-100 rounded-2xl p-4 flex items-start space-x-3">
+          <AlertCircle size={18} className="text-red-600 mt-0.5 shrink-0" />
+          <div>
+            <h4 className="text-xs font-bold text-red-900 mb-0.5">Erro ao pesquisar</h4>
+            <p className="text-[11px] text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading && (
+        <div className="px-4 mt-4 space-y-3">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="bg-white rounded-2xl p-3 border border-gray-100 flex gap-3">
+              <div className="w-20 h-20 rounded-xl bg-slate-200 animate-pulse shrink-0" />
+              <div className="flex-1 py-1">
+                <div className="h-3.5 bg-slate-100 rounded animate-pulse mb-2" />
+                <div className="h-3 w-2/3 bg-slate-100 rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Vazio */}
+      {!loading && !error && filtered.length === 0 && (
+        <div className="mx-4 mt-6 bg-white border border-gray-100 rounded-2xl p-6 text-center">
+          <Anchor size={24} className="text-slate-300 mx-auto mb-2" />
+          <p className="text-xs font-bold text-gray-900 mb-1">Nenhum resultado</p>
+          <p className="text-[11px] text-gray-500">
+            Tente pesquisar por &quot;garoupa&quot;, &quot;camarão&quot; ou &quot;lagosta&quot;.
+          </p>
+        </div>
+      )}
+
+      {/* Lista de resultados */}
+      {!loading && !error && (
+        <div className="px-4 mt-4 space-y-3">
+          {filtered.map((product) => {
+            const image =
+              product.image_url && product.image_url.startsWith("/")
+                ? product.image_url
+                : fallbackImage(product.id);
+            return (
+              <div
+                key={product.id}
+                className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm flex gap-3 items-center"
+              >
+                <Link href={`/product?id=${product.id}`} className="shrink-0">
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-slate-200">
+                    <Image src={image} alt={product.name} fill className="object-cover" />
+                  </div>
+                </Link>
+
+                <div className="flex-1 min-w-0">
+                  <Link href={`/product?id=${product.id}`}>
+                    <h4 className="text-xs font-bold text-gray-900 truncate">{product.name}</h4>
+                  </Link>
+                  <p className="text-[10px] text-gray-500 truncate">
+                    {product.stock_weight
+                      ? `${product.stock_weight} kg • ${formatKz(product.price / product.stock_weight)} AOA/kg`
+                      : product.description || "Pescado fresco do dia"}
+                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs font-black text-gray-900">
+                      {formatKz(product.price)} AOA
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 transition"
+                        aria-label="Favoritar"
+                      >
+                        <Heart size={13} />
+                      </button>
+                      <button
+                        onClick={() =>
+                          addItem({
+                            productId: product.id,
+                            name: product.name,
+                            subtitle:
+                              product.stock_weight
+                                ? `${product.stock_weight} kg • Fresco`
+                                : "Pescado fresco",
+                            price: product.price,
+                            image,
+                            stockWeight: product.stock_weight,
+                          })
+                        }
+                        className="w-7 h-7 bg-[#0b192c] text-white rounded-full flex items-center justify-center hover:bg-slate-700 transition"
+                        aria-label={`Adicionar ${product.name}`}
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function SearchResultsScreen() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-md mx-auto min-h-screen flex items-center justify-center">
+          <span className="text-xs text-slate-400">A carregar...</span>
+        </div>
+      }
+    >
+      <SearchResultsInner />
+    </Suspense>
   );
 }
