@@ -5,7 +5,7 @@ import { useApiClient, fetchProducts, ApiProduct } from "./api";
 
 /**
  * Cache global do catálogo em memória (partilhada entre todas as telas
- * que usam o hook enquanto a sessão do browser viver).
+ * que usam o hook enquanto a sessão do browser viver, lopes).
  */
 let cache: ApiProduct[] | null = null;
 let inflight: Promise<ApiProduct[]> | null = null;
